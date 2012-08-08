@@ -15,79 +15,108 @@ import com.amazonaws.services.sns.model.CreateTopicRequest;
 import com.amazonaws.services.sns.model.PublishRequest;
 
 public class SnsAsyncAppender extends AppenderSkeleton {
+
 	private final AmazonSNSAsync sns;
 	private String topicArn;
-	
+
 	private boolean snsClosed;
 
 	public SnsAsyncAppender() {
 		try {
+
 			this.sns = new AmazonSNSAsyncClient(new PropertiesCredentials(
-					SnsAsyncAppender.class.getResourceAsStream("/AwsCredentials.properties")));
+					SnsAsyncAppender.class
+							.getResourceAsStream("/AwsCredentials.properties")));
+
 			this.snsClosed = true;
-		} catch (IOException ioe) {
-			throw new RuntimeException("Could not instantiate SnsAsyncAppender", ioe);
+
+		} catch (final IOException ioe) {
+			throw new RuntimeException(
+					"Could not instantiate SnsAsyncAppender", ioe);
 		}
 	}
-	
-	public SnsAsyncAppender(String topicName) {
+
+	public SnsAsyncAppender(final String topicName) {
 		try {
+
 			this.sns = new AmazonSNSAsyncClient(new PropertiesCredentials(
-					SnsAsyncAppender.class.getResourceAsStream("/AwsCredentials.properties")));
-			this.topicArn = sns.createTopic(new CreateTopicRequest(topicName)).getTopicArn();
+					SnsAsyncAppender.class
+							.getResourceAsStream("/AwsCredentials.properties")));
+
+			this.topicArn = sns.createTopic(new CreateTopicRequest(topicName))
+					.getTopicArn();
+
 			this.snsClosed = false;
-		} catch (IOException ioe) {
-			throw new RuntimeException("Could not instantiate SnsAsyncAppender", ioe);
-		} catch (AmazonClientException ace) {
-			throw new RuntimeException("Could not instantiate SnsAsyncAppender", ace);
+
+		} catch (final IOException ioe) {
+
+			throw new RuntimeException(
+					"Could not instantiate SnsAsyncAppender", ioe);
+
+		} catch (final AmazonClientException ace) {
+			throw new RuntimeException(
+					"Could not instantiate SnsAsyncAppender", ace);
 		}
+
 	}
-	
+
 	/* For unit-testing purposes */
-	/* package */ SnsAsyncAppender(AmazonSNSAsync sns, String topicName) {
+	/* package */SnsAsyncAppender(final AmazonSNSAsync sns,
+			final String topicName) {
+
 		this.sns = sns;
-		this.topicArn = sns.createTopic(new CreateTopicRequest(topicName)).getTopicArn();
+
+		this.topicArn = sns.createTopic(new CreateTopicRequest(topicName))
+				.getTopicArn();
+
 		this.snsClosed = false;
+
 	}
-	
-	public void setTopicName(String topicName) {
+
+	public void setTopicName(final String topicName) {
 		try {
-			topicArn = sns.createTopic(new CreateTopicRequest(topicName)).getTopicArn();
+
+			topicArn = sns.createTopic(new CreateTopicRequest(topicName))
+					.getTopicArn();
+
 			snsClosed = false;
-		} catch (Exception e) {
+
+		} catch (final Exception e) {
 			LogLog.error("Could not set topic name to: " + topicName);
 			snsClosed = true;
 		}
 	}
 
 	@Override
-	protected void append(LoggingEvent event) {
+	protected void append(final LoggingEvent event) {
+
 		if (!checkEntryConditions()) {
 			return;
 		}
 
 		String logMessage;
+
 		if (layout != null) {
 			logMessage = layout.format(event);
 		} else {
 			logMessage = event.getRenderedMessage();
 		}
+
 		if (logMessage.getBytes().length > 64 * 1024) {
 			// SNS has a 64K limit on each published message.
-			logMessage = new String(Arrays.copyOf(logMessage.getBytes(), 64 * 1024));
+			logMessage = new String(Arrays.copyOf(logMessage.getBytes(),
+					64 * 1024));
 		}
-		
+
 		try {
-			sns.publishAsync(new PublishRequest(
-					topicArn,
-					logMessage,
-					event.getLoggerName() + " log: " + event.getLevel().toString()
-					));
-		} catch (AmazonClientException ase) {
+			sns.publishAsync(new PublishRequest(topicArn, logMessage, event
+					.getLoggerName() + " log: " + event.getLevel().toString()));
+		} catch (final AmazonClientException ase) {
 			LogLog.error("Could not log to SNS", ase);
 		}
+
 	}
-	
+
 	protected boolean checkEntryConditions() {
 		return !snsClosed;
 	}
@@ -97,14 +126,21 @@ public class SnsAsyncAppender extends AppenderSkeleton {
 	}
 
 	public void close() {
-		if (snsClosed) return;
+
+		if (snsClosed) {
+			return;
+		}
+
 		snsClosed = true;
+
 		sns.shutdown();
+
 		((AmazonSNSAsyncClient) sns).getExecutorService().shutdownNow();
+
 	}
 
 	public boolean requiresLayout() {
 		return false;
 	}
-		
+
 }

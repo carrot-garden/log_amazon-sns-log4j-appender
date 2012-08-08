@@ -8,17 +8,24 @@ import org.apache.log4j.Logger;
 import org.apache.log4j.PropertyConfigurator;
 
 public class SampleApp {
-	
+
 	static Logger logger = Logger.getLogger(SampleApp.class);
 
-	public static void main(String[] args) throws IOException {
-		Properties log4jProperties = new Properties();
-		log4jProperties.load(SampleApp.class.getResourceAsStream("/log4j.properties.sample"));
-		PropertyConfigurator.configure(log4jProperties);
-		
+	public static void main(final String[] args) throws IOException {
+
+		final Properties props = new Properties();
+
+		props.load(SampleApp.class
+				.getResourceAsStream("/log4j.properties.sample"));
+
+		PropertyConfigurator.configure(props);
+
 		logger.fatal("This is a test");
-		
-		// This is currently necessary to do explicitly due to a "bug" in the AWS SDK.
+
+		// This is currently necessary to do explicitly due to a "bug" in the
+		// AWS SDK.
 		LogManager.shutdown();
+
 	}
+
 }
